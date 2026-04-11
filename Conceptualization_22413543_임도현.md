@@ -8,6 +8,7 @@
 | **Student No** | `22413543` |
 | **Name** | `임도현` |
 | **E-mail** | `gusehdla@naver.com` |
+| **GitHub repository** | `https://github.com/Imdo714/queue_system` |
 
 
 > # 1. Business purpose
