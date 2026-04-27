@@ -24,7 +24,7 @@ class User(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val role: Role
+    var role: Role
 ) {
 
 }
