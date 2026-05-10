@@ -36,6 +36,10 @@ class CoursePersistenceAdapter(
         return courses[id]
     }
 
+    override fun findAll(): List<Course> {
+        return courses.values.toList()
+    }
+
     override fun findByCourseCode(courseCode: String): Course? {
         val id = courseCodes[courseCode] ?: return null
         return courses[id]
