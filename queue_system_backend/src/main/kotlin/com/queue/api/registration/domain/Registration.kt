@@ -11,14 +11,20 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "registrations",)
+@Table(
+    name = "registrations",
+    uniqueConstraints = [
+        UniqueConstraint(columnNames = ["user_id", "course_id"])
+    ]
+)
 class Registration(
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val id: Long? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

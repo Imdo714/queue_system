@@ -29,11 +29,11 @@ dependencies {
     // logger
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
+    // Mysql
+    runtimeOnly("com.mysql:mysql-connector-j")
+
     // Jpa
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-
-    // security
-    implementation("org.springframework.boot:spring-boot-starter-security")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
