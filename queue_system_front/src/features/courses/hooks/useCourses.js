@@ -1,35 +1,43 @@
+import { useEffect } from 'react';
 import { useCourseStore } from '../../../store/useCourseStore';
 
 export const useCourses = () => {
   const { 
     courses, 
     myCourseIds, 
-    addCourse: storeAddCourse, 
+    isLoading,
+    error,
+    fetchCourses,
+    createCourse: storeCreateCourse,
+    deleteCourse: storeDeleteCourse,
     registerCourse: storeRegisterCourse,
     cancelRegistration: storeCancelRegistration 
   } = useCourseStore();
 
+  // Optionally fetch courses when the hook is used
+  // Or let the component decide when to call getCourses
   const getCourses = async () => {
-    // Future API call: return await api.getCourses();
-    return courses;
+    await fetchCourses();
   };
 
   const register = async (courseId) => {
-    // Future API call: await api.register(courseId);
+    // Note: Registration API not yet implemented on backend based on user request
     storeRegisterCourse(courseId);
     return true;
   };
 
   const cancel = async (courseId) => {
-    // Future API call: await api.cancel(courseId);
+    // Note: Cancel API not yet implemented on backend
     storeCancelRegistration(courseId);
     return true;
   };
 
   const createCourse = async (courseData) => {
-    // Future API call: await api.createCourse(courseData);
-    storeAddCourse(courseData);
-    return true;
+    return await storeCreateCourse(courseData);
+  };
+
+  const deleteCourse = async (courseId, studentNo) => {
+    return await storeDeleteCourse(courseId, studentNo);
   };
 
   const myCourses = courses.filter(course => myCourseIds.includes(course.id));
@@ -37,9 +45,12 @@ export const useCourses = () => {
   return {
     courses,
     myCourses,
+    isLoading,
+    error,
     getCourses,
     register,
     cancel,
     createCourse,
+    deleteCourse,
   };
 };
