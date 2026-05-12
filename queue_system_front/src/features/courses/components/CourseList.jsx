@@ -3,10 +3,15 @@ import { Button } from '../../../components/shared/Button';
 import { useCourses } from '../hooks/useCourses';
 import { useQueue } from '../../queue/hooks/useQueue';
 import { QueueModal } from '../../queue/components/QueueModal';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { Trash2 } from 'lucide-react';
 
 export const CourseList = () => {
-  const { courses, getCourses, register, myCourseIds, isLoading, error } = useCourses();
+  const { courses, getCourses, register, myCourseIds, isLoading, error, deleteCourse } = useCourses();
   const { rank, joinQueue, cancelQueue } = useQueue();
+  const { user } = useAuthStore();
+
+  const isAdmin = user?.role === 'ADMIN' || user?.studentNo === 'admin';
 
   useEffect(() => {
     getCourses();
@@ -17,6 +22,17 @@ export const CourseList = () => {
       register(id);
       alert('수강신청이 성공적으로 완료되었습니다!');
     });
+  };
+
+  const handleDelete = async (courseId) => {
+    if (window.confirm('정말로 이 강의를 삭제하시겠습니까?')) {
+      const success = await deleteCourse(courseId, user?.studentNo || 'admin');
+      if (success) {
+        alert('강의가 삭제되었습니다.');
+      } else {
+        alert('강의 삭제에 실패했습니다.');
+      }
+    }
   };
 
   if (isLoading) return <div className="text-center py-10 text-gray-400">강의 정보를 불러오는 중...</div>;
@@ -33,7 +49,7 @@ export const CourseList = () => {
             <th className="px-4 py-3 text-sm font-semibold text-gray-300">시간</th>
             <th className="px-4 py-3 text-sm font-semibold text-gray-300">인원</th>
             <th className="px-4 py-3 text-sm font-semibold text-gray-300">상태</th>
-            <th className="px-4 py-3 text-sm font-semibold text-gray-300 text-right">신청</th>
+            <th className="px-4 py-3 text-sm font-semibold text-gray-300 text-right">관리/신청</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-700">
@@ -72,14 +88,27 @@ export const CourseList = () => {
                     )}
                   </td>
                   <td className="px-4 py-4 text-right">
-                    <Button
-                      size="sm"
-                      variant={isRegistered ? 'outline' : isFull ? 'outline' : 'primary'}
-                      disabled={isFull || isRegistered}
-                      onClick={() => handleRegister(course.id)}
-                    >
-                      {isRegistered ? '신청완료' : '수강신청'}
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => handleDelete(course.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <Trash2 size={14} />
+                          삭제
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant={isRegistered ? 'outline' : isFull ? 'outline' : 'primary'}
+                        disabled={isFull || isRegistered}
+                        onClick={() => handleRegister(course.id)}
+                      >
+                        {isRegistered ? '신청완료' : '수강신청'}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               );
