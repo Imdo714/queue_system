@@ -14,5 +14,9 @@ open class ServiceException (
 
     class CourseNotFoundException : ServiceException(ErrorCode.COURSE_NOT_FOUND)
     class CourseAlreadyExistsException : ServiceException(ErrorCode.COURSE_ALREADY_EXISTS)
+    class CourseFullException : ServiceException(ErrorCode.COURSE_FULL)
+    class CourseClosedException : ServiceException(ErrorCode.COURSE_CLOSED)
 
+    class RegistrationAlreadyExistsException : ServiceException(ErrorCode.REGISTRATION_ALREADY_EXISTS)
+    class RegistrationNotFoundException : ServiceException(ErrorCode.REGISTRATION_NOT_FOUND)
 }

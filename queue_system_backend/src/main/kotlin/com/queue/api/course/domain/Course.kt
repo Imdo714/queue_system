@@ -40,24 +40,25 @@ class Course(
 
     @OneToMany(mappedBy = "course", cascade = [CascadeType.ALL], orphanRemoval = true)
     val registrations: MutableList<Registration> = mutableListOf()
+
     ) {
-    companion object {
-        fun create(
-            courseCode: String,
-            title: String,
-            maxCapacity: Int,
-            dayOfWeek: DayOfWeek,
-            startTime: LocalTime,
-            endTime: LocalTime
-        ): Course {
-            return Course(
-                courseCode = courseCode,
-                title = title,
-                maxCapacity = maxCapacity,
-                dayOfWeek = dayOfWeek,
-                startTime = startTime,
-                endTime = endTime
-            )
+        companion object {
+            fun create(
+                courseCode: String,
+                title: String,
+                maxCapacity: Int,
+                dayOfWeek: DayOfWeek,
+                startTime: LocalTime,
+                endTime: LocalTime
+            ): Course {
+                return Course(
+                    courseCode = courseCode,
+                    title = title,
+                    maxCapacity = maxCapacity,
+                    dayOfWeek = dayOfWeek,
+                    startTime = startTime,
+                    endTime = endTime
+                )
+            }
         }
-    }
     }

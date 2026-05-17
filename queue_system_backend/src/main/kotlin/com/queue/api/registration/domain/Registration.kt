@@ -38,4 +38,13 @@ class Registration(
     val registrationDate: LocalDateTime = LocalDateTime.now()
 ) {
 
+    companion object {
+        fun create(user: User, course: Course): Registration {
+            return Registration(
+                user = user,
+                course = course
+            )
+        }
+    }
+
 }

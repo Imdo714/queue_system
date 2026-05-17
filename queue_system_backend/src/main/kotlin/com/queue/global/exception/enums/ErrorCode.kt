@@ -18,5 +18,10 @@ enum class ErrorCode(
     /** Course */
     COURSE_NOT_FOUND(404, "COURSE_NOT_FOUND", "존재하지 않는 강의입니다."),
     COURSE_ALREADY_EXISTS(409, "COURSE_ALREADY_EXISTS", "이미 존재하는 강의 코드입니다."),
+    COURSE_FULL(409, "COURSE_FULL", "수강 인원이 가득 찼습니다."),
+    COURSE_CLOSED(400, "COURSE_CLOSED", "수강 신청이 마감된 강의입니다."),
 
+    /** Registration */
+    REGISTRATION_ALREADY_EXISTS(409, "REGISTRATION_ALREADY_EXISTS", "이미 수강신청된 강의입니다."),
+    REGISTRATION_NOT_FOUND(404, "REGISTRATION_NOT_FOUND", "수강신청 내역이 없습니다."),
 }
