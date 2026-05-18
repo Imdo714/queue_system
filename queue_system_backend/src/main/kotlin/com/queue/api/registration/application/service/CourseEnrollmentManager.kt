@@ -10,12 +10,12 @@ class CourseEnrollmentManager(
 ) {
 
     fun increase(course: Course) {
-        course.currentEnrolled++
+        course.increaseEnrolled()
         coursePort.save(course)
     }
 
     fun decrease(course: Course) {
-        course.currentEnrolled--
+        course.decreaseEnrolled()
         coursePort.save(course)
     }
 }

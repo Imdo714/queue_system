@@ -42,6 +42,14 @@ class Course(
     val registrations: MutableList<Registration> = mutableListOf()
 
     ) {
+        fun increaseEnrolled() {
+            currentEnrolled++
+        }
+
+        fun decreaseEnrolled() {
+            currentEnrolled--
+        }
+
         companion object {
             fun create(
                 courseCode: String,
