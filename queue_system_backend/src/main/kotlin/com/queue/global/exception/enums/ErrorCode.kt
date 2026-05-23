@@ -24,4 +24,5 @@ enum class ErrorCode(
     /** Registration */
     REGISTRATION_ALREADY_EXISTS(409, "REGISTRATION_ALREADY_EXISTS", "이미 수강신청된 강의입니다."),
     REGISTRATION_NOT_FOUND(404, "REGISTRATION_NOT_FOUND", "수강신청 내역이 없습니다."),
+    REGISTRATION_TIME_CONFLICT(409, "REGISTRATION_TIME_CONFLICT", "이미 그 시간에는 다른 수업이 있습니다."),
 }

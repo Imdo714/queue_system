@@ -19,4 +19,5 @@ open class ServiceException (
 
     class RegistrationAlreadyExistsException : ServiceException(ErrorCode.REGISTRATION_ALREADY_EXISTS)
     class RegistrationNotFoundException : ServiceException(ErrorCode.REGISTRATION_NOT_FOUND)
+    class RegistrationTimeConflictException : ServiceException(ErrorCode.REGISTRATION_TIME_CONFLICT)
 }

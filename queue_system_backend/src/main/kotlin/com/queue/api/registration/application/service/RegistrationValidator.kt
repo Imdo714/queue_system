@@ -49,4 +49,17 @@ class RegistrationValidator(
         return registrationPort.findByUserIdAndCourseId(userId, courseId)
             ?: throw ServiceException.RegistrationNotFoundException()
     }
+
+    fun validateNoTimeConflict(userId: Long, newCourse: Course) {
+        val hasConflict = registrationPort.findByUserId(userId)
+            .map { it.course }
+            .filter { it.dayOfWeek == newCourse.dayOfWeek }
+            .any { existing ->
+                existing.startTime < newCourse.endTime && newCourse.startTime < existing.endTime
+            }
+
+        if (hasConflict) {
+            throw ServiceException.RegistrationTimeConflictException()
+        }
+    }
 }

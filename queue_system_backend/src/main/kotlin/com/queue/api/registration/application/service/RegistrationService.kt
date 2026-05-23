@@ -22,6 +22,7 @@ class RegistrationService(
 
         registrationValidator.validateCourseIsOpen(course)
         registrationValidator.validateNotDuplicated(user.id!!, course.id!!)
+        registrationValidator.validateNoTimeConflict(user.id!!, course)
         registrationValidator.validateHasCapacity(course)
 
         registrationPort.save(Registration.create(user, course))
