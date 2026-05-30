@@ -1,7 +1,6 @@
 package com.queue.api.course.presentation.controller
 
-import com.queue.api.course.application.port.`in`.CreateCourseUseCase
-import com.queue.api.course.application.port.`in`.DeleteCourseUseCase
+import com.queue.api.course.application.port.`in`.CourseUseCase
 import com.queue.api.course.presentation.dto.request.CreateCourseRequest
 import com.queue.api.course.presentation.dto.request.DeleteCourseRequest
 import com.queue.global.common.response.BaseResponse
@@ -10,15 +9,14 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/admin/course")
 class AdminCourseController(
-    private val createCourseUseCase: CreateCourseUseCase,
-    private val deleteCourseUseCase: DeleteCourseUseCase
+    private val courseUseCase: CourseUseCase
 ) {
 
     @PostMapping
     fun createCourse(
         @RequestBody request: CreateCourseRequest
     ): BaseResponse<Unit> {
-        createCourseUseCase.createCourse(request)
+        courseUseCase.createCourse(request)
         return BaseResponse.ok()
     }
 
@@ -27,7 +25,7 @@ class AdminCourseController(
         @PathVariable courseId: Long,
         @RequestBody request: DeleteCourseRequest
     ): BaseResponse<Unit> {
-        deleteCourseUseCase.deleteCourse(request.studentNo, courseId)
+        courseUseCase.deleteCourse(request.studentNo, courseId)
         return BaseResponse.ok()
     }
 

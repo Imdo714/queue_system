@@ -1,7 +1,6 @@
 package com.queue.api.course.application.service
 
-import com.queue.api.course.application.port.`in`.CreateCourseUseCase
-import com.queue.api.course.application.port.`in`.DeleteCourseUseCase
+import com.queue.api.course.application.port.`in`.CourseUseCase
 import com.queue.api.course.application.port.`in`.GetCourseUseCase
 import com.queue.api.course.application.port.out.CoursePort
 import com.queue.api.course.domain.Course
@@ -16,7 +15,7 @@ import org.springframework.stereotype.Service
 class CourseService(
     private val coursePort: CoursePort,
     private val userPort: UserPort
-) : CreateCourseUseCase, DeleteCourseUseCase, GetCourseUseCase {
+) : CourseUseCase, GetCourseUseCase {
 
     override fun createCourse(request: CreateCourseRequest) {
         validateAdmin(request.studentNo)
@@ -37,8 +36,8 @@ class CourseService(
         coursePort.save(course)
     }
 
-    override fun deleteCourse(adminId: String, courseId: Long) {
-        validateAdmin(adminId)
+    override fun deleteCourse(studentNo: String, courseId: Long) {
+        validateAdmin(studentNo)
 
         coursePort.findById(courseId) ?: throw ServiceException.CourseNotFoundException()
 
