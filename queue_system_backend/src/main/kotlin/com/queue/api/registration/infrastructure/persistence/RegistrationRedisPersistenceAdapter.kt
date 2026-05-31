@@ -12,29 +12,15 @@ import java.time.Duration
 private val log = KotlinLogging.logger {}
 
 /**
- * Redis Outbound Adapter — infrastructure 패키지에 위치.
+ * Redis Outbound Adapter.
  *
- * RegistrationRedisPort 를 구현하며, 모든 Redis 기술 세부사항을 이 클래스 안에 캡슐화한다.
- *  - RegistrationService 는 이 클래스의 존재를 모른다 (포트 인터페이스만 안다).
- *  - JSON 직렬화/역직렬화, Lua 스크립트, Redis 키 네이밍 등이 여기서 처리된다.
+ * ## Redis 키
+ *  course:capacity:{courseId}  → String     잔여 정원
+ *  course:queue:{courseId}     → Sorted Set 신청자 목록 (score = 신청 시각ms)
+ *  user:courses:{studentNo}    → String     JSON 캐시 (5분 TTL)
  *
- * ## Redis 키 설계
- *  course:capacity:{courseId}   → String (잔여 정원 정수)
- *  course:registered:{courseId} → Set<String> (등록된 userId)
- *  user:courses:{studentNo}     → String (JSON, 5분 TTL)
- *
- * ## 동시성 제어 — Lua 스크립트
- * Redis 는 싱글 스레드로 명령을 처리하므로, Lua 스크립트 실행 중에는
- * 다른 클라이언트 명령이 끼어들 수 없다 → 별도 분산 락 없이 Race Condition 방지.
- *
- * ### Redisson 분산 락 대안 (복잡한 임계 영역에 적합)
- * 여러 Redis 명령과 외부 작업(HTTP 호출 등)을 하나의 임계 영역으로 묶을 때는
- * Redisson RLock 사용을 권장한다.
- * ```kotlin
- * val lock = redissonClient.getLock("lock:course:$courseId")
- * if (!lock.tryLock(1, 5, TimeUnit.SECONDS)) throw ServiceException.CourseFullException()
- * try { /* 복합 작업 */ } finally { lock.unlock() }
- * ```
+ * ## 동시성
+ *  모든 상태 변경은 Lua 스크립트로 원자 처리.
  */
 @Repository
 class RegistrationRedisPersistenceAdapter(
@@ -43,99 +29,108 @@ class RegistrationRedisPersistenceAdapter(
 ) : RegistrationRedisPort {
 
     companion object {
-        private const val CAPACITY_KEY = "course:capacity:"         // 강의 잔여 정원
-        private const val REGISTERED_KEY = "course:registered:"     // 강의에 등록된 회원 Id
-        private const val USER_COURSES_KEY = "user:courses:"        // 회원 강의 신청 목록
+        private const val CAPACITY_KEY = "course:capacity:"
+        private const val QUEUE_KEY = "course:queue:"
+        private const val USER_COURSES_KEY = "user:courses:"
         private val CACHE_TTL = Duration.ofMinutes(5)
 
         /**
          * 수강신청 원자적 Lua 스크립트.
          *
-         * KEYS[1] = course:capacity:{courseId}   (잔여 정원)
-         * KEYS[2] = course:registered:{courseId} (등록 userId 집합)
-         * ARGV[1] = userId
-         * ARGV[2] = availableCapacity (키 미존재 시 초기값 — 서버 재시작 자동 복구)
+         * KEYS[1] = course:capacity:{courseId}
+         * KEYS[2] = course:queue:{courseId}    (Sorted Set)
+         * ARGV[1] = studentNo
+         * ARGV[2] = timestamp (ms) — score
+         * ARGV[3] = availableCapacity         (capacity 키 미존재 시 초기값)
          *
-         * 반환값: 남은 정원(>= 0) | -1: 정원 초과 | -2: 중복 신청
+         * 반환: 0-based 순번 | -1: 정원 초과 | -3: 이미 신청됨
          */
-        private val REGISTER_SCRIPT = DefaultRedisScript<Long>().apply {
+        private val JOIN_SCRIPT = DefaultRedisScript<Long>().apply {
             setScriptText("""
-                -- 정원 키 미존재 시 초기화 (서버 재시작 후 첫 요청 자동 복구)
-                -- 인메모리 저장소가 Source of Truth이므로, 정원 키가 없다는 것은
-                -- 서버가 재시작되어 인메모리가 초기화된 상태 → 등록 집합도 함께 초기화한다.
-                if redis.call('EXISTS', KEYS[1]) == 0 then
-                    redis.call('SET', KEYS[1], ARGV[2])
-                    redis.call('DEL', KEYS[2])
+                -- 중복 신청 검사
+                if redis.call('ZSCORE', KEYS[2], ARGV[1]) ~= false then
+                    return -3
                 end
 
-                -- 중복 신청 검사 (SISMEMBER: O(1))
-                if redis.call('SISMEMBER', KEYS[2], ARGV[1]) == 1 then
-                    return -2
+                -- capacity 키 없으면 초기화 (서버 재시작 복구)
+                if redis.call('EXISTS', KEYS[1]) == 0 then
+                    redis.call('SET', KEYS[1], ARGV[3])
                 end
 
                 -- 잔여 정원 확인
                 local remaining = tonumber(redis.call('GET', KEYS[1]))
-                if remaining <= 0 then
+                if remaining == nil or remaining <= 0 then
                     return -1
                 end
 
-                -- 정원 차감 (DECR 원자적 연산)
+                -- 정원 차감 (동시 요청 race condition 방지)
                 local newRemaining = redis.call('DECR', KEYS[1])
                 if newRemaining < 0 then
-                    -- 동시 요청으로 음수가 된 경우 즉시 원복
                     redis.call('INCR', KEYS[1])
                     return -1
                 end
 
-                -- 등록 집합에 추가
-                redis.call('SADD', KEYS[2], ARGV[1])
-                return newRemaining
+                -- Sorted Set 등록 (score = 신청 시각, 낮을수록 먼저)
+                redis.call('ZADD', KEYS[2], ARGV[2], ARGV[1])
+                return redis.call('ZRANK', KEYS[2], ARGV[1])
             """.trimIndent())
             resultType = Long::class.java
         }
 
         /**
-         * 수강 취소 원자적 Lua 스크립트.
+         * 수강 취소 원자적 Lua 스크립트 — ZREM + 정원 INCR.
          *
          * KEYS[1] = course:capacity:{courseId}
-         * KEYS[2] = course:registered:{courseId}
-         * ARGV[1] = userId
+         * KEYS[2] = course:queue:{courseId}
+         * ARGV[1] = studentNo
          *
-         * userId 가 집합에 없어도 멱등하게 동작한다.
+         * 반환: 1 = 취소 성공 | 0 = 신청 내역 없음
          */
         private val CANCEL_SCRIPT = DefaultRedisScript<Long>().apply {
             setScriptText("""
-                if redis.call('SISMEMBER', KEYS[2], ARGV[1]) == 1 then
+                if redis.call('ZSCORE', KEYS[2], ARGV[1]) ~= false then
+                    redis.call('ZREM', KEYS[2], ARGV[1])
                     redis.call('INCR', KEYS[1])
-                    redis.call('SREM', KEYS[2], ARGV[1])
+                    return 1
                 end
-                return 1
+                return 0
             """.trimIndent())
             resultType = Long::class.java
         }
     }
 
-    // ── 동시성 제어 ───────────────────────────────────────────────────────────
+    // ── 수강신청 / 취소 ──────────────────────────────────────────────────────
 
-    override fun tryRegister(courseId: Long, userId: Long, availableCapacity: Int): Long {
+    override fun joinQueue(courseId: Long, studentNo: String, availableCapacity: Int): Long {
+        val timestamp = System.currentTimeMillis()
         return redisTemplate.execute(
-            REGISTER_SCRIPT,
-            listOf("$CAPACITY_KEY$courseId", "$REGISTERED_KEY$courseId"),
-            userId.toString(),
+            JOIN_SCRIPT,
+            listOf("$CAPACITY_KEY$courseId", "$QUEUE_KEY$courseId"),
+            studentNo,
+            timestamp.toString(),
             availableCapacity.toString()
-        ) ?: error("Redis REGISTER 스크립트가 null 반환 — courseId=$courseId, userId=$userId")
+        ) ?: error("Redis JOIN 스크립트 null 반환 — courseId=$courseId, studentNo=$studentNo")
     }
 
-    override fun cancelRegistration(courseId: Long, userId: Long) {
-        redisTemplate.execute(
+    override fun removeFromQueue(courseId: Long, studentNo: String): Boolean {
+        val result = redisTemplate.execute(
             CANCEL_SCRIPT,
-            listOf("$CAPACITY_KEY$courseId", "$REGISTERED_KEY$courseId"),
-            userId.toString()
-        )
-        log.debug { "Redis 취소 복구 완료: courseId=$courseId, userId=$userId" }
+            listOf("$CAPACITY_KEY$courseId", "$QUEUE_KEY$courseId"),
+            studentNo
+        ) ?: 0L
+        log.debug { "Redis 취소: courseId=$courseId, studentNo=$studentNo, result=$result" }
+        return result == 1L
     }
 
-    // ── Cache-Aside (JSON 직렬화는 이 클래스 내부에서만 처리) ─────────────────
+    // ── 순번 조회 ─────────────────────────────────────────────────────────────
+
+    override fun getQueueRank(courseId: Long, studentNo: String): Long? =
+        redisTemplate.opsForZSet().rank("$QUEUE_KEY$courseId", studentNo)
+
+    override fun getQueueSize(courseId: Long): Long =
+        redisTemplate.opsForZSet().size("$QUEUE_KEY$courseId") ?: 0L
+
+    // ── Cache-Aside ───────────────────────────────────────────────────────────
 
     override fun getCachedRegistrations(studentNo: String): List<RegistrationResponse>? {
         val json = redisTemplate.opsForValue().get("$USER_COURSES_KEY$studentNo") ?: return null

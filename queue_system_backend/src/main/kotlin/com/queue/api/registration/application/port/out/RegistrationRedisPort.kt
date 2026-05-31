@@ -5,36 +5,38 @@ import com.queue.api.registration.presentation.dto.response.RegistrationResponse
 /**
  * Redis 전용 Outbound Port.
  *
- * RegistrationService 는 이 인터페이스만 의존하며, JSON 직렬화·Redis 명령 등
- * 구체적인 인프라 세부사항은 전혀 알지 못한다.
- * 구현체(RegistrationRedisPersistenceAdapter)가 infrastructure 패키지에서 담당한다.
+ * ## Redis 키 설계
+ *  course:capacity:{courseId}  → String     잔여 정원
+ *  course:queue:{courseId}     → Sorted Set 신청 순서 기록 (score = 신청 시각)
+ *  user:courses:{studentNo}    → String     JSON 캐시 (5분 TTL)
  *
- * ## 역할 분담
- *  - tryRegister      : 수강신청 원자적 시도 (Lua 스크립트 — 중복·정원 동시 검사)
- *  - cancelRegistration: 수강 취소 원자적 복구 (정원 INCR + 등록 집합 SREM)
- *  - 캐시 3종         : Cache-Aside 패턴 (GET / SET-with-TTL / DEL)
+ * ## 흐름
+ *  1. joinQueue    : 정원 체크 + Sorted Set 등록 + 정원 차감 (Lua 원자 처리)
+ *  2. removeFromQueue : 취소 — ZREM + 정원 반납 (Lua 원자 처리)
+ *  3. getQueueRank / getQueueSize : 순번·인원 조회
  */
 interface RegistrationRedisPort {
 
     /**
-     * 수강신청 원자적 시도.
-     *
-     * @return 남은 잔여 정원(>= 0): 성공 | -1: 정원 초과 | -2: 중복 신청
+     * 수강신청 원자적 처리.
+     * @param availableCapacity 잔여 정원 (capacity 키 미존재 시 초기값)
+     * @return 0-based 순번(>=0) | -1: 정원 초과 | -3: 이미 신청됨
      */
-    fun tryRegister(courseId: Long, userId: Long, availableCapacity: Int): Long
+    fun joinQueue(courseId: Long, studentNo: String, availableCapacity: Int): Long
 
     /**
-     * 수강 취소 원자적 복구.
-     * 정원 INCR + 등록 집합 SREM 을 단일 Lua 스크립트로 처리한다.
+     * 수강 취소 원자적 처리 — ZREM + 정원 INCR.
+     * @return true: 취소 성공 | false: 신청 내역 없음
      */
-    fun cancelRegistration(courseId: Long, userId: Long)
+    fun removeFromQueue(courseId: Long, studentNo: String): Boolean
 
-    /** Cache-Aside: 캐시 조회 — miss 이면 null */
+    /** 0-based 신청 순번. 미신청이면 null */
+    fun getQueueRank(courseId: Long, studentNo: String): Long?
+
+    /** 전체 신청 인원 수 */
+    fun getQueueSize(courseId: Long): Long
+
     fun getCachedRegistrations(studentNo: String): List<RegistrationResponse>?
-
-    /** Cache-Aside: 5분 TTL 로 응답 목록 캐싱 */
     fun cacheRegistrations(studentNo: String, responses: List<RegistrationResponse>)
-
-    /** 수강신청·취소 후 캐시 무효화 */
     fun invalidateRegistrationCache(studentNo: String)
 }
