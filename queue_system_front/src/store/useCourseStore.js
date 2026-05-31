@@ -3,9 +3,10 @@ import { courseApi } from '../api/courseApi';
 
 export const useCourseStore = create((set, get) => ({
   courses: [],
+  myRegistrations: [], // GET /registration 응답 목록 (RegistrationResponse[])
   isLoading: false,
   error: null,
-  myCourseIds: [], // IDs of courses the user has registered for
+  myCourseIds: [],
   
   fetchCourses: async () => {
     set({ isLoading: true });
@@ -47,27 +48,41 @@ export const useCourseStore = create((set, get) => ({
     }
   },
   
-  registerCourse: (courseId) => set((state) => {
-    // Check if already registered
-    if (state.myCourseIds.includes(courseId)) {
-      alert('이미 신청한 강의입니다.');
-      return state;
+  registerCourse: async (courseId, studentNo) => {
+    if (get().myCourseIds.includes(courseId)) {
+      throw new Error('이미 신청한 강의입니다.');
     }
-    
-    return {
-      courses: state.courses.map((c) => 
-        c.id === courseId && c.currentEnrolled < c.maxCapacity 
-          ? { ...c, currentEnrolled: c.currentEnrolled + 1 } 
+    await courseApi.registerCourse(courseId, studentNo);
+    set((state) => ({
+      courses: state.courses.map((c) =>
+        c.id === courseId && c.currentEnrolled < c.maxCapacity
+          ? { ...c, currentEnrolled: c.currentEnrolled + 1 }
           : c
       ),
-      myCourseIds: [...state.myCourseIds, courseId]
-    };
-  }),
-  
-  cancelRegistration: (courseId) => set((state) => ({
-    courses: state.courses.map((c) => 
-      c.id === courseId ? { ...c, currentEnrolled: Math.max(0, c.currentEnrolled - 1) } : c
-    ),
-    myCourseIds: state.myCourseIds.filter(id => id !== courseId)
-  })),
+      myCourseIds: [...state.myCourseIds, courseId],
+    }));
+  },
+
+  cancelRegistration: async (courseId, studentNo) => {
+    await courseApi.cancelRegistration(courseId, studentNo);
+    set((state) => ({
+      courses: state.courses.map((c) =>
+        c.id === courseId ? { ...c, currentEnrolled: Math.max(0, c.currentEnrolled - 1) } : c
+      ),
+      myCourseIds: state.myCourseIds.filter((id) => id !== courseId),
+      myRegistrations: state.myRegistrations.filter((r) => r.courseId !== courseId),
+    }));
+  },
+
+  fetchMyRegistrations: async (studentNo) => {
+    set({ isLoading: true });
+    try {
+      const registrations = await courseApi.getMyRegistrations(studentNo);
+      // 로컬 myCourseIds도 동기화하여 CourseList의 "신청됨" 뱃지와 일치시킴
+      const ids = registrations.map((r) => r.courseId);
+      set({ myRegistrations: registrations, myCourseIds: ids, isLoading: false, error: null });
+    } catch (error) {
+      set({ error, isLoading: false });
+    }
+  },
 }));

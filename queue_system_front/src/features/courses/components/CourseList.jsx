@@ -18,9 +18,13 @@ export const CourseList = () => {
   }, []);
 
   const handleRegister = (courseId) => {
-    joinQueue(courseId, (id) => {
-      register(id);
-      alert('수강신청이 성공적으로 완료되었습니다!');
+    joinQueue(courseId, async (id) => {
+      try {
+        await register(id);
+        alert('수강신청이 성공적으로 완료되었습니다!');
+      } catch (err) {
+        alert(`수강신청 실패: ${err?.message || err || '알 수 없는 오류'}`);
+      }
     });
   };
 

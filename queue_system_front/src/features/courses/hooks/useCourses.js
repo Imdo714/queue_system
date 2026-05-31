@@ -1,34 +1,34 @@
-import { useEffect } from 'react';
 import { useCourseStore } from '../../../store/useCourseStore';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 export const useCourses = () => {
-  const { 
-    courses, 
-    myCourseIds, 
+  const {
+    courses,
+    myRegistrations,
+    myCourseIds,
     isLoading,
     error,
     fetchCourses,
+    fetchMyRegistrations: storeFetchMyRegistrations,
     createCourse: storeCreateCourse,
     deleteCourse: storeDeleteCourse,
     registerCourse: storeRegisterCourse,
-    cancelRegistration: storeCancelRegistration 
+    cancelRegistration: storeCancelRegistration
   } = useCourseStore();
 
-  // Optionally fetch courses when the hook is used
-  // Or let the component decide when to call getCourses
+  const { user } = useAuthStore();
+
   const getCourses = async () => {
     await fetchCourses();
   };
 
   const register = async (courseId) => {
-    // Note: Registration API not yet implemented on backend based on user request
-    storeRegisterCourse(courseId);
+    await storeRegisterCourse(courseId, user?.studentNo);
     return true;
   };
 
   const cancel = async (courseId) => {
-    // Note: Cancel API not yet implemented on backend
-    storeCancelRegistration(courseId);
+    await storeCancelRegistration(courseId, user?.studentNo);
     return true;
   };
 
@@ -40,14 +40,20 @@ export const useCourses = () => {
     return await storeDeleteCourse(courseId, studentNo);
   };
 
+  const getMyRegistrations = async () => {
+    await storeFetchMyRegistrations(user?.studentNo);
+  };
+
   const myCourses = courses.filter(course => myCourseIds.includes(course.id));
 
   return {
     courses,
     myCourses,
+    myRegistrations,
     isLoading,
     error,
     getCourses,
+    getMyRegistrations,
     register,
     cancel,
     createCourse,
