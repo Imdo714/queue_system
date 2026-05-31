@@ -43,9 +43,9 @@ class RegistrationRedisPersistenceAdapter(
 ) : RegistrationRedisPort {
 
     companion object {
-        private const val CAPACITY_KEY = "course:capacity:"
-        private const val REGISTERED_KEY = "course:registered:"
-        private const val USER_COURSES_KEY = "user:courses:"
+        private const val CAPACITY_KEY = "course:capacity:"         // 강의 잔여 정원
+        private const val REGISTERED_KEY = "course:registered:"     // 강의에 등록된 회원 Id
+        private const val USER_COURSES_KEY = "user:courses:"        // 회원 강의 신청 목록
         private val CACHE_TTL = Duration.ofMinutes(5)
 
         /**
@@ -61,8 +61,11 @@ class RegistrationRedisPersistenceAdapter(
         private val REGISTER_SCRIPT = DefaultRedisScript<Long>().apply {
             setScriptText("""
                 -- 정원 키 미존재 시 초기화 (서버 재시작 후 첫 요청 자동 복구)
+                -- 인메모리 저장소가 Source of Truth이므로, 정원 키가 없다는 것은
+                -- 서버가 재시작되어 인메모리가 초기화된 상태 → 등록 집합도 함께 초기화한다.
                 if redis.call('EXISTS', KEYS[1]) == 0 then
                     redis.call('SET', KEYS[1], ARGV[2])
+                    redis.call('DEL', KEYS[2])
                 end
 
                 -- 중복 신청 검사 (SISMEMBER: O(1))

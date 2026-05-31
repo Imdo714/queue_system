@@ -15,6 +15,24 @@ class Course(
     val startTime: LocalTime,
     val endTime: LocalTime
 ) {
+    fun update(
+        title: String? = null,
+        maxCapacity: Int? = null,
+        dayOfWeek: DayOfWeek? = null,
+        startTime: LocalTime? = null,
+        endTime: LocalTime? = null
+    ): Course = Course(
+        id = this.id,
+        courseCode = this.courseCode,
+        title = title ?: this.title,
+        maxCapacity = maxCapacity ?: this.maxCapacity,
+        currentEnrolled = this.currentEnrolled,
+        status = this.status,
+        dayOfWeek = dayOfWeek ?: this.dayOfWeek,
+        startTime = startTime ?: this.startTime,
+        endTime = endTime ?: this.endTime
+    )
+
     fun increaseEnrolled() {
         currentEnrolled++
     }

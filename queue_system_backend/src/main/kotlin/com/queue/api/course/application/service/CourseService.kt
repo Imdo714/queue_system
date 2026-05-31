@@ -4,6 +4,7 @@ import com.queue.api.course.application.port.`in`.CourseUseCase
 import com.queue.api.course.application.port.`in`.GetCourseUseCase
 import com.queue.api.course.application.port.out.CoursePort
 import com.queue.api.course.domain.Course
+import com.queue.api.course.presentation.dto.request.CourseUpdateRequest
 import com.queue.api.course.presentation.dto.request.CreateCourseRequest
 import com.queue.api.course.presentation.dto.response.CourseResponse
 import com.queue.api.user.application.port.out.UserPort
@@ -34,6 +35,22 @@ class CourseService(
         )
 
         coursePort.save(course)
+    }
+
+    override fun updateCourse(courseId: Long, request: CourseUpdateRequest) {
+        validateAdmin(request.studentNo)
+
+        val course = coursePort.findById(courseId) ?: throw ServiceException.CourseNotFoundException()
+
+        val updated = course.update(
+            title = request.title,
+            maxCapacity = request.maxCapacity,
+            dayOfWeek = request.dayOfWeek,
+            startTime = request.startTime,
+            endTime = request.endTime
+        )
+
+        coursePort.save(updated)
     }
 
     override fun deleteCourse(studentNo: String, courseId: Long) {

@@ -1,6 +1,7 @@
 package com.queue.api.course.presentation.controller
 
 import com.queue.api.course.application.port.`in`.CourseUseCase
+import com.queue.api.course.presentation.dto.request.CourseUpdateRequest
 import com.queue.api.course.presentation.dto.request.CreateCourseRequest
 import com.queue.api.course.presentation.dto.request.DeleteCourseRequest
 import com.queue.global.common.response.BaseResponse
@@ -17,6 +18,15 @@ class AdminCourseController(
         @RequestBody request: CreateCourseRequest
     ): BaseResponse<Unit> {
         courseUseCase.createCourse(request)
+        return BaseResponse.ok()
+    }
+
+    @PatchMapping("/{courseId}")
+    fun updateCourse(
+        @PathVariable courseId: Long,
+        @RequestBody request: CourseUpdateRequest
+    ): BaseResponse<Unit> {
+        courseUseCase.updateCourse(courseId, request)
         return BaseResponse.ok()
     }
 
