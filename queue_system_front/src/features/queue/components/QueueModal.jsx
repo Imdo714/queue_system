@@ -1,6 +1,6 @@
 import { Button } from '../../../components/shared/Button';
 
-export const QueueModal = ({ rank, onCancel }) => {
+export const QueueModal = ({ rank, totalInQueue, onCancel }) => {
   if (rank === null) return null;
 
   return (
@@ -22,8 +22,11 @@ export const QueueModal = ({ rank, onCancel }) => {
             <p className="text-6xl font-black text-blue-400 tabular-nums leading-none">
               {rank}
             </p>
-            <p className="text-xl text-gray-300 mb-1">명</p>
+            <p className="text-xl text-gray-300 mb-1">번째</p>
           </div>
+          {totalInQueue && (
+            <p className="text-sm text-gray-500 mt-1">전체 대기 {totalInQueue}명</p>
+          )}
           <p className="text-xs text-gray-500 mt-3">순서가 줄어들고 있어요, 잠시만 기다려 주세요</p>
         </div>
 
@@ -31,7 +34,7 @@ export const QueueModal = ({ rank, onCancel }) => {
         <div className="w-full bg-gray-700 rounded-full h-1.5 mb-6">
           <div
             className="bg-blue-500 h-1.5 rounded-full transition-all duration-700"
-            style={{ width: `${Math.max(5, 100 - rank * 10)}%` }}
+            style={{ width: `${totalInQueue ? Math.max(5, Math.round((1 - rank / totalInQueue) * 100)) : 5}%` }}
           />
         </div>
 

@@ -7,8 +7,8 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import { Trash2 } from 'lucide-react';
 
 export const CourseList = () => {
-  const { courses, getCourses, register, myCourseIds, isLoading, error, deleteCourse } = useCourses();
-  const { rank, joinQueue, cancelQueue } = useQueue();
+  const { courses, getCourses, getMyRegistrations, myCourseIds, isLoading, error, deleteCourse } = useCourses();
+  const { rank, totalInQueue, joinQueue, cancelQueue } = useQueue();
   const { user } = useAuthStore();
 
   const isAdmin = user?.role === 'ADMIN' || user?.studentNo === 'admin';
@@ -18,13 +18,9 @@ export const CourseList = () => {
   }, []);
 
   const handleRegister = (courseId) => {
-    joinQueue(courseId, async (id) => {
-      try {
-        await register(id);
-        alert('수강신청이 성공적으로 완료되었습니다!');
-      } catch (err) {
-        alert(`수강신청 실패: ${err?.message || err || '알 수 없는 오류'}`);
-      }
+    joinQueue(courseId, user?.studentNo, async () => {
+      alert('수강신청이 완료되었습니다!');
+      await Promise.all([getCourses(), getMyRegistrations()]);
     });
   };
 
@@ -44,7 +40,7 @@ export const CourseList = () => {
 
   return (
     <div className="overflow-x-auto">
-      <QueueModal rank={rank} onCancel={cancelQueue} />
+      <QueueModal rank={rank} totalInQueue={totalInQueue} onCancel={cancelQueue} />
       <table className="w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-gray-700 bg-gray-800">

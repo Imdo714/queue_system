@@ -19,4 +19,7 @@ export const courseApi = {
 
   getMyRegistrations: (studentNo) =>
     api.get('/registration', { params: { studentNo } }),
+
+  getQueueRank: (courseId, studentNo) =>
+    api.get(`/registration/queue/${courseId}/rank`, { params: { studentNo } }),
 };
