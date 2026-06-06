@@ -41,6 +41,10 @@ export const CourseRegistration = () => {
     }
   };
 
+  const isAdmin = user?.studentNo === 'admin';
+
+  if (!isAdmin) return null;
+
   if (!isOpen) {
     return (
       <Button onClick={() => setIsOpen(true)} variant="secondary">
