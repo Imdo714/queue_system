@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.connection.RedisPassword
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.serializer.StringRedisSerializer
@@ -28,6 +29,13 @@ class RedisConfig {
         if (password.isNotBlank()) {
             config.password = RedisPassword.of(password)
         }
+
+        // Upstash는 TLS 연결이 필수라 설정
+        val clientConfig = LettuceClientConfiguration.builder()
+            .useSsl()                    // SSL 활성화
+            .disablePeerVerification()   // 인증서 검증 생략
+            .build()
+
         return LettuceConnectionFactory(config)
     }
 
