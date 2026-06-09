@@ -7,6 +7,7 @@ import com.queue.api.course.domain.Course
 import com.queue.api.course.presentation.dto.request.CourseUpdateRequest
 import com.queue.api.course.presentation.dto.request.CreateCourseRequest
 import com.queue.api.course.presentation.dto.response.CourseResponse
+import com.queue.api.registration.application.port.out.RegistrationCommandPort
 import com.queue.api.user.application.port.out.UserPort
 import com.queue.global.common.enums.Role
 import com.queue.global.exception.ServiceException
@@ -15,7 +16,8 @@ import org.springframework.stereotype.Service
 @Service
 class CourseService(
     private val coursePort: CoursePort,
-    private val userPort: UserPort
+    private val userPort: UserPort,
+    private val registrationCommandPort: RegistrationCommandPort
 ) : CourseUseCase, GetCourseUseCase {
 
     override fun createCourse(request: CreateCourseRequest) {
@@ -58,6 +60,7 @@ class CourseService(
 
         coursePort.findById(courseId) ?: throw ServiceException.CourseNotFoundException()
 
+        registrationCommandPort.deleteByCourseId(courseId)
         coursePort.delete(courseId)
     }
 

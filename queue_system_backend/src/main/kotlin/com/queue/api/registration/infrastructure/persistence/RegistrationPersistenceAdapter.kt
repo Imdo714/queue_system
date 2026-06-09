@@ -38,6 +38,10 @@ class RegistrationPersistenceAdapter : RegistrationCommandPort, RegistrationQuer
         store.remove(id)
     }
 
+    override fun deleteByCourseId(courseId: Long) {
+        store.entries.removeIf { it.value.course.id == courseId }
+    }
+
     // ── RegistrationQueryPort ─────────────────────────────────────────────────
 
     override fun findById(id: Long): Registration? = store[id]
