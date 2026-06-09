@@ -1,10 +1,6 @@
 spring:
   application:
     name: queue
-
-  server:
-    port: 8080
-
   data:
     redis:
       host: ${REDIS_HOST}
@@ -13,3 +9,5 @@ spring:
       ssl:
         enabled: true
 
+server:
+  port: 8080
