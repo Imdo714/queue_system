@@ -55,7 +55,7 @@ export const LoginForm = () => {
         <p className="text-center text-xs text-yellow-400 leading-relaxed">
           ⚠️ 무료 서버를 사용하여 처음 요청 시 최대 1분 정도 대기 시간이 발생할 수 있습니다.
           <br />
-          1분이 지나도 응답이 없으면 새로고침 후 다시 시도해 주세요.
+          1분이 지나도 응답이 없으면 창을 닫고 재 접속 해주세요.
         </p>
       </div>
     </form>
