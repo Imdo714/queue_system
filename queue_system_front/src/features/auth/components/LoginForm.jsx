@@ -45,9 +45,19 @@ export const LoginForm = () => {
           회원가입
         </Link>
       </p>
-      <p className="text-center text-xs text-gray-500 mt-2">
-        강의 생성을 위한 계정, 비밀번호는 <span className="font-semibold text-gray-300">admin</span> 입니다.
-      </p>
+      <div className="mt-4 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 space-y-2">
+        <p className="text-center text-xs text-gray-400">
+          강의 생성을 위한 학번, 비밀번호는{' '}
+          <span className="font-semibold text-white bg-gray-700 px-1.5 py-0.5 rounded">admin</span>{' '}
+          입니다.
+        </p>
+        <div className="border-t border-gray-700" />
+        <p className="text-center text-xs text-yellow-400 leading-relaxed">
+          ⚠️ 무료 서버를 사용하여 처음 요청 시 최대 1분 정도 대기 시간이 발생할 수 있습니다.
+          <br />
+          1분이 지나도 응답이 없으면 새로고침 후 다시 시도해 주세요.
+        </p>
+      </div>
     </form>
   );
 };
