@@ -36,7 +36,7 @@ class RedisConfig {
             .disablePeerVerification()   // 인증서 검증 생략
             .build()
 
-        return LettuceConnectionFactory(config)
+        return LettuceConnectionFactory(config, clientConfig)
     }
 
     /**
