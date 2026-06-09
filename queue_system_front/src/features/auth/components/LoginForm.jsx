@@ -45,6 +45,9 @@ export const LoginForm = () => {
           회원가입
         </Link>
       </p>
+      <p className="text-center text-xs text-gray-500 mt-2">
+        강의 생성을 위한 계정, 비밀번호는 <span className="font-semibold text-gray-300">admin</span> 입니다.
+      </p>
     </form>
   );
 };
