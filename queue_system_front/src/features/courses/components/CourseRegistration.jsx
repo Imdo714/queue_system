@@ -4,46 +4,52 @@ import { Input } from '../../../components/shared/Input';
 import { useCourses } from '../hooks/useCourses';
 import { useAuthStore } from '../../../store/useAuthStore';
 
+const INITIAL_FORM = {
+  courseCode: '',
+  title: '',
+  maxCapacity: 30,
+  dayOfWeek: 'MONDAY',
+  startTime: '09:00:00',
+  endTime: '11:00:00',
+};
+
+const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+const DAY_KO = {
+  MONDAY: '월요일', TUESDAY: '화요일', WEDNESDAY: '수요일',
+  THURSDAY: '목요일', FRIDAY: '금요일', SATURDAY: '토요일', SUNDAY: '일요일',
+};
+
+const toTimeValue = (time) => String(time).substring(0, 5);
+const toTimeParam = (value) => value + ':00';
+
 export const CourseRegistration = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [formData, setFormData] = useState(INITIAL_FORM);
   const { user } = useAuthStore();
-  const [formData, setFormData] = useState({
-    courseCode: '',
-    title: '',
-    maxCapacity: 30,
-    dayOfWeek: 'MONDAY',
-    startTime: '09:00:00',
-    endTime: '11:00:00',
-  });
-  
   const { createCourse, isLoading } = useCourses();
+
+  const isAdmin = user?.studentNo === 'admin';
+  if (!isAdmin) return null;
+
+  const handleChange = (field, value) =>
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setFormData(INITIAL_FORM);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await createCourse({
-      ...formData,
-      studentNo: user?.studentNo || 'admin', // Default to admin for now if not logged in
-    });
-    
+    const success = await createCourse({ ...formData, studentNo: user?.studentNo || 'admin' });
     if (success) {
-      setIsOpen(false);
-      setFormData({
-        courseCode: '',
-        title: '',
-        maxCapacity: 30,
-        dayOfWeek: 'MONDAY',
-        startTime: '09:00:00',
-        endTime: '11:00:00',
-      });
+      handleClose();
       alert('강의가 성공적으로 등록되었습니다.');
     } else {
       alert('강의 등록에 실패했습니다.');
     }
   };
-
-  const isAdmin = user?.studentNo === 'admin';
-
-  if (!isAdmin) return null;
 
   if (!isOpen) {
     return (
@@ -61,52 +67,50 @@ export const CourseRegistration = () => {
           label="강의코드"
           placeholder="e.g. CS101"
           value={formData.courseCode}
-          onChange={(e) => setFormData({ ...formData, courseCode: e.target.value })}
+          onChange={(e) => handleChange('courseCode', e.target.value)}
           required
         />
         <Input
           label="강의명"
           value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          onChange={(e) => handleChange('title', e.target.value)}
           required
         />
         <Input
           label="수강 정원"
           type="number"
           value={formData.maxCapacity}
-          onChange={(e) => setFormData({ ...formData, maxCapacity: parseInt(e.target.value) })}
+          onChange={(e) => handleChange('maxCapacity', parseInt(e.target.value))}
           required
         />
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">요일</label>
-          <select 
+          <select
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={formData.dayOfWeek}
-            onChange={(e) => setFormData({ ...formData, dayOfWeek: e.target.value })}
+            onChange={(e) => handleChange('dayOfWeek', e.target.value)}
           >
-            {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map(day => (
-              <option key={day} value={day}>{day}</option>
+            {DAYS.map((day) => (
+              <option key={day} value={day}>{DAY_KO[day]}</option>
             ))}
           </select>
         </div>
         <Input
           label="시작 시간"
           type="time"
-          step="1"
-          value={formData.startTime.substring(0, 5)}
-          onChange={(e) => setFormData({ ...formData, startTime: e.target.value + ':00' })}
+          value={toTimeValue(formData.startTime)}
+          onChange={(e) => handleChange('startTime', toTimeParam(e.target.value))}
           required
         />
         <Input
           label="종료 시간"
           type="time"
-          step="1"
-          value={formData.endTime.substring(0, 5)}
-          onChange={(e) => setFormData({ ...formData, endTime: e.target.value + ':00' })}
+          value={toTimeValue(formData.endTime)}
+          onChange={(e) => handleChange('endTime', toTimeParam(e.target.value))}
           required
         />
         <div className="md:col-span-2 flex justify-end gap-2 mt-4">
-          <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+          <Button type="button" variant="outline" onClick={handleClose}>
             취소
           </Button>
           <Button type="submit" disabled={isLoading}>
